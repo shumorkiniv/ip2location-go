@@ -2,7 +2,7 @@ package ip2location
 
 // IP2Location интерфейс для работы с Query
 type IP2Location interface {
-	Query(int, uint32) (Record, error)
+	Query(string, uint32) (*Record, error)
 	Close() error
 }
 
