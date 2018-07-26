@@ -30,6 +30,7 @@ func (db *DB) Query(ip string, mode uint32) (*Record, error) {
 	var mid uint32
 	var rowoffset uint32
 	var rowoffset2 uint32
+	var err error
 
 	ipfrom := big.NewInt(0)
 	ipto := big.NewInt(0)
@@ -49,8 +50,12 @@ func (db *DB) Query(ip string, mode uint32) (*Record, error) {
 
 	// reading index
 	if ipindex > 0 {
-		low = readuint32(db.r, ipindex)
-		high = readuint32(db.r, ipindex+4)
+		low, err = db.readuint32(ipindex)
+		high, err = db.readuint32(ipindex + 4)
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	if ipno.Cmp(maxip) >= 0 {
@@ -63,11 +68,24 @@ func (db *DB) Query(ip string, mode uint32) (*Record, error) {
 		rowoffset2 = rowoffset + colsize
 
 		if iptype == 4 {
-			ipfrom = big.NewInt(int64(readuint32(db.r, rowoffset)))
-			ipto = big.NewInt(int64(readuint32(db.r, rowoffset2)))
+			fromOffset, err := db.readuint32(rowoffset)
+			if err != nil {
+				return nil, err
+			}
+			ipfrom = big.NewInt(int64(fromOffset))
+
+			toOffset, err := db.readuint32(rowoffset2)
+			if err != nil {
+				return nil, err
+			}
+			ipto = big.NewInt(int64(toOffset))
 		} else {
-			ipfrom = readuint128(db.r, rowoffset)
-			ipto = readuint128(db.r, rowoffset2)
+			ipfrom, err = db.readuint128(rowoffset)
+			ipto, err = db.readuint128(rowoffset2)
+
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		if ipno.Cmp(ipfrom) >= 0 && ipno.Cmp(ipto) < 0 {
@@ -76,84 +94,167 @@ func (db *DB) Query(ip string, mode uint32) (*Record, error) {
 			}
 
 			if mode&CountryShort == 1 && countryEnabled {
-				record.CountryShort = readstr(db.r, readuint32(db.r, rowoffset+countryPositionOffset))
+				offset, err := db.readuint32(rowoffset + countryPositionOffset)
+				record.CountryShort, err = db.readstr(offset)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if mode&CountryLong != 0 && countryEnabled {
-				record.CountryLong = readstr(db.r, readuint32(db.r, rowoffset+countryPositionOffset)+3)
+				offset, err := db.readuint32(rowoffset + countryPositionOffset)
+				record.CountryLong, err = db.readstr(offset + 3)
+
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if mode&Region != 0 && regionEnabled {
-				record.Region = readstr(db.r, readuint32(db.r, rowoffset+regionPositionOffset))
+				offset, err := db.readuint32(rowoffset + regionPositionOffset)
+				record.Region, err = db.readstr(offset)
+
+				if err != nil {
+					return nil, err
+				}
+
 			}
 
 			if mode&City != 0 && cityEnabled {
-				record.City = readstr(db.r, readuint32(db.r, rowoffset+cityPositionOffset))
+				offset, err := db.readuint32(rowoffset + cityPositionOffset)
+				record.City, err = db.readstr(offset)
+
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if mode&ISP != 0 && ispEnabled {
-				record.ISP = readstr(db.f, readuint32(db.r, rowoffset+ispPositionOffset))
+				offset, err := db.readuint32(rowoffset + ispPositionOffset)
+				record.ISP, err = db.readstr(offset)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if mode&Latitude != 0 && latitudeEnabled {
-				record.Latitude = readfloat(db.f, rowoffset+latitudePositionOffset)
+				record.Latitude, err = db.readfloat(rowoffset + latitudePositionOffset)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if mode&Longitude != 0 && longitudeEnabled {
-				record.Longitude = readfloat(db.f, rowoffset+longitudePositionOffset)
+				record.Longitude, err = db.readfloat(rowoffset + longitudePositionOffset)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if mode&Domain != 0 && domainEnabled {
-				record.Domain = readstr(db.f, readuint32(db.f, rowoffset+domainPositionOffset))
+				offset, err := db.readuint32(rowoffset + domainPositionOffset)
+				record.Domain, err = db.readstr(offset)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if mode&ZipCode != 0 && zipCodeEnabled {
-				record.ZipCode = readstr(db.f, readuint32(db.f, rowoffset+zipCodePositionOffset))
+				offset, err := db.readuint32(rowoffset + zipCodePositionOffset)
+				record.ZipCode, err = db.readstr(offset)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if mode&TimeZone != 0 && timeZoneEnabled {
-				record.TimeZone = readstr(db.f, readuint32(db.f, rowoffset+timeZonePositionOffset))
+				offset, err := db.readuint32(rowoffset + timeZonePositionOffset)
+				record.TimeZone, err = db.readstr(offset)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if mode&NetSpeed != 0 && netSpeedEnabled {
-				record.NetSpeed = readstr(db.f, readuint32(db.f, rowoffset+netSpeedPositionOffset))
+				offset, err := db.readuint32(rowoffset + netSpeedPositionOffset)
+				record.NetSpeed, err = db.readstr(offset)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if mode&IddCode != 0 && iddCodeEnabled {
-				record.IddCode = readstr(db.f, readuint32(db.f, rowoffset+iddCodePositionOffset))
+				offset, err := db.readuint32(rowoffset + iddCodePositionOffset)
+				record.IddCode, err = db.readstr(offset)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if mode&AreaCode != 0 && areaCodeEnabled {
-				record.AreaCode = readstr(db.f, readuint32(db.f, rowoffset+areaCodePositionOffset))
+				offset, err := db.readuint32(rowoffset + areaCodePositionOffset)
+				record.AreaCode, err = db.readstr(offset)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if mode&WeatherStationCode != 0 && weatherStationCodeEnabled {
-				record.WeatherStationCode = readstr(db.f, readuint32(db.f, rowoffset+weatherStationCodePositionOffset))
+				offset, err := db.readuint32(rowoffset + weatherStationCodePositionOffset)
+				record.WeatherStationCode, err = db.readstr(offset)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if mode&WeatherStationName != 0 && weatherStationNameEnabled {
-				record.WeatherStationName = readstr(db.f, readuint32(db.f, rowoffset+weatherStationNamePositionOffset))
+				offset, err := db.readuint32(rowoffset + weatherStationNamePositionOffset)
+				record.WeatherStationName, err = db.readstr(offset)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if mode&Mcc != 0 && mccEnabled {
-				record.Mcc = readstr(db.f, readuint32(db.f, rowoffset+mccPositionOffset))
+				offset, err := db.readuint32(rowoffset + mccPositionOffset)
+				record.Mcc, err = db.readstr(offset)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if mode&Mnc != 0 && mncEnabled {
-				record.Mnc = readstr(db.f, readuint32(db.f, rowoffset+mncPositionOffset))
+				offset, err := db.readuint32(rowoffset + mncPositionOffset)
+				record.Mnc, err = db.readstr(offset)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if mode&MobileBrand != 0 && mobileBrandEnabled {
-				record.MobileBrand = readstr(db.f, readuint32(db.f, rowoffset+mobileBrandPositionOffset))
+				offset, err := db.readuint32(rowoffset + mobileBrandPositionOffset)
+				record.MobileBrand, err = db.readstr(offset)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if mode&Elevation != 0 && elevationEnabled {
-				f, _ := strconv.ParseFloat(readstr(db.f, readuint32(db.f, rowoffset+elevationPositionOffset)), 32)
+				offset, err := db.readuint32(rowoffset + elevationPositionOffset)
+				float, err := db.readstr(offset)
+				if err != nil {
+					return nil, err
+				}
+				f, _ := strconv.ParseFloat(float, 32)
 				record.Elevation = float32(f)
 			}
 
 			if mode&UsageType != 0 && usageTypeEnabled {
-				record.UsageType = readstr(db.f, readuint32(db.f, rowoffset+usageTypePositionOffset))
+				offset, err := db.readuint32(rowoffset + usageTypePositionOffset)
+				record.UsageType, err = db.readstr(offset)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			return record, nil
@@ -168,7 +269,7 @@ func (db *DB) Query(ip string, mode uint32) (*Record, error) {
 }
 
 // get IP type and calculate IP number; calculates index too if exists
-func checkip(ip string, meta ip2LocationMeta) (iptype uint32, ipnum *big.Int, ipindex uint32) {
+func checkip(ip string, meta meta) (iptype uint32, ipnum *big.Int, ipindex uint32) {
 	iptype = 0
 	ipnum = big.NewInt(0)
 	ipnumtmp := big.NewInt(0)
