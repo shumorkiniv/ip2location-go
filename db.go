@@ -5,16 +5,14 @@ import (
 	"encoding/binary"
 	"io"
 	"math/big"
-	"os"
 )
 
 // DB содержит в себе данные из файла
 type DB struct {
-	f       *os.File
-	r       io.ReaderAt
-	meta    meta
-	offsets map[uint32]uint32
-	mode uint32
+	r            io.ReaderAt
+	meta         meta
+	offsets      dbOffset
+	fieldEnabled fieldEnabled
 }
 
 type meta struct {
@@ -33,28 +31,62 @@ type meta struct {
 	ipv6ColumnSize    uint32
 }
 
-var countryPosition = [25]uint8{0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}
-var regionPosition = [25]uint8{0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3}
-var cityPosition = [25]uint8{0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4}
-var ispPosition = [25]uint8{0, 0, 3, 0, 5, 0, 7, 5, 7, 0, 8, 0, 9, 0, 9, 0, 9, 0, 9, 7, 9, 0, 9, 7, 9}
-var latitudePosition = [25]uint8{0, 0, 0, 0, 0, 5, 5, 0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5}
-var longitudePosition = [25]uint8{0, 0, 0, 0, 0, 6, 6, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6}
-var domainPosition = [25]uint8{0, 0, 0, 0, 0, 0, 0, 6, 8, 0, 9, 0, 10, 0, 10, 0, 10, 0, 10, 8, 10, 0, 10, 8, 10}
-var zipCodePosition = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 0, 7, 7, 7, 0, 7, 0, 7, 7, 7, 0, 7}
-var timeZonePosition = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 8, 7, 8, 8, 8, 7, 8, 0, 8, 8, 8, 0, 8}
-var netSpeedPosition = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 11, 0, 11, 8, 11, 0, 11, 0, 11, 0, 11}
-var iddCodePosition = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 12, 0, 12, 0, 12, 9, 12, 0, 12}
-var areaCodePosition = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 13, 0, 13, 0, 13, 10, 13, 0, 13}
-var weatherStationCodePosition = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 14, 0, 14, 0, 14, 0, 14}
-var weatherStationNamePosition = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 15, 0, 15, 0, 15, 0, 15}
-var mccPosition = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 16, 0, 16, 9, 16}
-var mncPosition = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 17, 0, 17, 10, 17}
-var mobileBrandPosition = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 18, 0, 18, 11, 18}
-var elevationPosition = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 19, 0, 19}
-var usageTypePosition = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 20}
+type dbOffset struct {
+	countryPositionOffset            uint32
+	regionPositionOffset             uint32
+	cityPositionOffset               uint32
+	ispPositionOffset                uint32
+	domainPositionOffset             uint32
+	zipCodePositionOffset            uint32
+	latitudePositionOffset           uint32
+	longitudePositionOffset          uint32
+	timeZonePositionOffset           uint32
+	netSpeedPositionOffset           uint32
+	iddCodePositionOffset            uint32
+	areaCodePositionOffset           uint32
+	weatherStationCodePositionOffset uint32
+	weatherStationNamePositionOffset uint32
+	mccPositionOffset                uint32
+	mncPositionOffset                uint32
+	mobileBrandPositionOffset        uint32
+	elevationPositionOffset          uint32
+	usageTypePositionOffset          uint32
+}
+
+type fieldEnabled struct {
+	countryEnabled            bool
+	regionEnabled             bool
+	cityEnabled               bool
+	ispEnabled                bool
+	domainEnabled             bool
+	zipCodeEnabled            bool
+	latitudeEnabled           bool
+	longitudeEnabled          bool
+	timeZoneEnabled           bool
+	netSpeedEnabled           bool
+	iddCodeEnabled            bool
+	areaCodeEnabled           bool
+	weatherStationCodeEnabled bool
+	weatherStationNameEnabled bool
+	mccEnabled                bool
+	mncEnabled                bool
+	mobileBrandEnabled        bool
+	elevationEnabled          bool
+	usageTypeEnabled          bool
+}
+
+func newDb(r io.ReaderAt) (*DB, error) {
+	db := &DB{}
+	err := db.readMeta(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
 
 // read byte
-func (db *DB) readuint8(pos int64) (uint8, error) {
+func (db *DB) readUint8(pos int64) (uint8, error) {
 	var retval uint8
 	data := make([]byte, 1)
 	_, err := db.r.ReadAt(data, pos-1)
@@ -66,7 +98,7 @@ func (db *DB) readuint8(pos int64) (uint8, error) {
 }
 
 // read unsigned 32-bit integer
-func (db *DB) readuint32(pos uint32) (uint32, error) {
+func (db *DB) readUint32(pos uint32) (uint32, error) {
 	pos2 := int64(pos)
 	var retval uint32
 	data := make([]byte, 4)
@@ -83,7 +115,7 @@ func (db *DB) readuint32(pos uint32) (uint32, error) {
 }
 
 // read unsigned 128-bit integer
-func (db *DB) readuint128(pos uint32) (*big.Int, error) {
+func (db *DB) readUint128(pos uint32) (*big.Int, error) {
 	pos2 := int64(pos)
 	retval := big.NewInt(0)
 	data := make([]byte, 16)
@@ -101,7 +133,7 @@ func (db *DB) readuint128(pos uint32) (*big.Int, error) {
 }
 
 // read string
-func (db *DB) readstr(pos uint32) (string, error) {
+func (db *DB) readStr(pos uint32) (string, error) {
 	pos2 := int64(pos)
 	var retval string
 	lenbyte := make([]byte, 1)
@@ -120,7 +152,7 @@ func (db *DB) readstr(pos uint32) (string, error) {
 }
 
 // read float
-func (db *DB) readfloat(pos uint32) (float32, error) {
+func (db *DB) readFloat(pos uint32) (float32, error) {
 	pos2 := int64(pos)
 	var retval float32
 	data := make([]byte, 4)

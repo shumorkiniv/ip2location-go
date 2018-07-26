@@ -9,66 +9,29 @@ import (
 	"syscall"
 )
 
+type Location struct {
+	f    *os.File
+	data *DB
+}
+
 //const api_version string = "8.0.3"
 
 var maxIPv4Range = big.NewInt(4294967295)
 var maxIPv6Range = big.NewInt(0)
 
-var metaOk bool
-
-var countryPositionOffset uint32
-var regionPositionOffset uint32
-var cityPositionOffset uint32
-var ispPositionOffset uint32
-var domainPositionOffset uint32
-var zipCodePositionOffset uint32
-var latitudePositionOffset uint32
-var longitudePositionOffset uint32
-var timeZonePositionOffset uint32
-var netSpeedPositionOffset uint32
-var iddCodePositionOffset uint32
-var areaCodePositionOffset uint32
-var weatherStationCodePositionOffset uint32
-var weatherStationNamePositionOffset uint32
-var mccPositionOffset uint32
-var mncPositionOffset uint32
-var mobileBrandPositionOffset uint32
-var elevationPositionOffset uint32
-var usageTypePositionOffset uint32
-
-var countryEnabled bool
-var regionEnabled bool
-var cityEnabled bool
-var ispEnabled bool
-var domainEnabled bool
-var zipCodeEnabled bool
-var latitudeEnabled bool
-var longitudeEnabled bool
-var timeZoneEnabled bool
-var netSpeedEnabled bool
-var iddCodeEnabled bool
-var areaCodeEnabled bool
-var weatherStationCodeEnabled bool
-var weatherStationNameEnabled bool
-var mccEnabled bool
-var mncEnabled bool
-var mobileBrandEnabled bool
-var elevationEnabled bool
-var usageTypeEnabled bool
-
 // New читает файл
-func New(path string, mmap bool) (*DB, error) {
+func New(path string, mmap bool) (*Location, error) {
 	var err error
 	s, err := os.Stat(path)
 	if err != nil {
-		return nil, errors.New("Wrong path")
+		return nil, errors.New("wrong path")
 	}
 
 	if s.IsDir() {
-		return nil, errors.New("Can't open directory")
+		return nil, errors.New("can't open directory")
 	}
 
-	db := &DB{}
+	data := &Location{}
 	var r io.ReaderAt
 	if mmap {
 		var fd int
@@ -83,29 +46,32 @@ func New(path string, mmap bool) (*DB, error) {
 
 		r = bytes.NewReader(data)
 	} else {
-		if db.f, err = os.Open(path); err != nil {
+		if data.f, err = os.Open(path); err != nil {
 			return nil, err
 		}
-		r = db.f
+		r = data.f
 	}
 
 	if r != nil {
-		err := db.readMeta(r)
+		data.data, err = newDb(r)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return db, nil
+	return data, nil
+}
+
+func (location *Location) Query(ip string, mode uint32) (*Record, error) {
+	return location.data.query(ip, mode)
 }
 
 // Close закрывает файл БД
-func (db *DB) Close() error {
-	// если читали из памяти, то ничего не закрываем
-	if db.f == nil {
+func (location *Location) Close() error {
+	if location.f == nil {
 		return nil
 	}
-	err := db.f.Close()
+	err := location.f.Close()
 	if err != nil {
 		return err
 	}
