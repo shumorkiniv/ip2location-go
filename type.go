@@ -95,4 +95,5 @@ type Record struct {
 	UsageType          string
 }
 
+// ErrNotFound ошибка если не было найдено местополежний по IP
 var ErrNotFound = errors.New("IP not found")
