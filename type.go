@@ -1,5 +1,7 @@
 package ip2location
 
+import "errors"
+
 // IP2Location интерфейс для работы с Query
 type IP2Location interface {
 	Query(string, uint32) (*Record, error)
@@ -92,3 +94,5 @@ type Record struct {
 	Elevation          float32
 	UsageType          string
 }
+
+var ErrNotFound = errors.New("IP not found")
