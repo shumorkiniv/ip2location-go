@@ -8,15 +8,13 @@ import (
 	"syscall"
 )
 
-type Location struct {
+type FileDB struct {
 	f    *os.File
 	data *DB
 }
 
-//const api_version string = "8.0.3"
-
 // New читает файл
-func New(path string, mmap bool) (*Location, error) {
+func New(path string, mmap bool) (*FileDB, error) {
 	var err error
 	s, err := os.Stat(path)
 	if err != nil {
@@ -27,7 +25,7 @@ func New(path string, mmap bool) (*Location, error) {
 		return nil, errors.New("can't open directory")
 	}
 
-	data := &Location{}
+	data := &FileDB{}
 	var r io.ReaderAt
 	if mmap {
 		var fd int
@@ -58,16 +56,16 @@ func New(path string, mmap bool) (*Location, error) {
 	return data, nil
 }
 
-func (location *Location) Query(ip string, mode uint32) (*Record, error) {
-	return location.data.Query(ip, mode)
+func (fileDB *FileDB) Query(ip string, mode uint32) (*Record, error) {
+	return fileDB.data.Query(ip, mode)
 }
 
 // Close закрывает файл БД
-func (location *Location) Close() error {
-	if location.f == nil {
+func (fileDB *FileDB) Close() error {
+	if fileDB.f == nil {
 		return nil
 	}
-	err := location.f.Close()
+	err := fileDB.f.Close()
 	if err != nil {
 		return err
 	}
