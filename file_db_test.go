@@ -8,7 +8,7 @@ var DBpath = "IP-COUNTRY-SAMPLE.BIN"
 
 func TestNewLocation(t *testing.T) {
 	t.Run("Read from file", func(t *testing.T) {
-		db, err := New(DBpath, false)
+		db, err := NewFileDB(DBpath, false)
 		if err != nil {
 			t.Error(err)
 		}
@@ -30,7 +30,7 @@ func TestNewLocation(t *testing.T) {
 	})
 
 	t.Run("Read from memory", func(t *testing.T) {
-		db, err := New(DBpath, true)
+		db, err := NewFileDB(DBpath, true)
 		if err != nil {
 			t.Error(err)
 		}
@@ -51,14 +51,14 @@ func TestNewLocation(t *testing.T) {
 	})
 
 	t.Run("Wrong path", func(t *testing.T) {
-		_, err := New("", false)
+		_, err := NewFileDB("", false)
 		if err == nil {
 			t.Error(err)
 		}
 	})
 
 	t.Run("Dir", func(t *testing.T) {
-		_, err := New(".", false)
+		_, err := NewFileDB(".", false)
 		if err == nil {
 			t.Error(err)
 		}
