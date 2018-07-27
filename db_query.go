@@ -8,7 +8,7 @@ import (
 )
 
 // Query поиск местоположения по IP
-func (db *DB) query(ip string, mode uint32) (*Record, error) {
+func (db *DB) Query(ip string, mode uint32) (*Record, error) {
 	record := &Record{}
 
 	// check IP type and return IP number & index (if exists)

@@ -49,7 +49,7 @@ func New(path string, mmap bool) (*Location, error) {
 	}
 
 	if r != nil {
-		data.data, err = NewDb(r)
+		data.data, err = NewDB(r)
 		if err != nil {
 			return nil, err
 		}

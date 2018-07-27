@@ -7,7 +7,7 @@ import (
 	"math/big"
 )
 
-// DB содержит в себе данные из файла
+// DB работает с предоставленной базой ip2location
 type DB struct {
 	r            io.ReaderAt
 	meta         meta
@@ -77,7 +77,8 @@ type fieldEnabled struct {
 	usageTypeEnabled          bool
 }
 
-func NewDb(r io.ReaderAt) (*DB, error) {
+// NewDB создает новый инстанс структуры DB
+func NewDB(r io.ReaderAt) (*DB, error) {
 	db := &DB{}
 	db.r = r
 	db.maxIPv4Range = big.NewInt(4294967295)
@@ -90,10 +91,7 @@ func NewDb(r io.ReaderAt) (*DB, error) {
 	return db, nil
 }
 
-func (db *DB) Query(ip string, mode uint32) (*Record, error) {
-	return db.query(ip, mode)
-}
-
+// Close метод заглушка закрытия файлового хэндлера
 func (db *DB) Close() error {
 	return nil
 }
