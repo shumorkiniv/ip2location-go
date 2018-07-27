@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"math/big"
 	"os"
 	"syscall"
 )
@@ -15,9 +14,6 @@ type Location struct {
 }
 
 //const api_version string = "8.0.3"
-
-var maxIPv4Range = big.NewInt(4294967295)
-var maxIPv6Range = big.NewInt(0)
 
 // New читает файл
 func New(path string, mmap bool) (*Location, error) {
@@ -53,7 +49,7 @@ func New(path string, mmap bool) (*Location, error) {
 	}
 
 	if r != nil {
-		data.data, err = newDb(r)
+		data.data, err = NewDb(r)
 		if err != nil {
 			return nil, err
 		}
@@ -63,7 +59,7 @@ func New(path string, mmap bool) (*Location, error) {
 }
 
 func (location *Location) Query(ip string, mode uint32) (*Record, error) {
-	return location.data.query(ip, mode)
+	return location.data.Query(ip, mode)
 }
 
 // Close закрывает файл БД

@@ -13,6 +13,8 @@ type DB struct {
 	meta         meta
 	offsets      dbOffset
 	fieldEnabled fieldEnabled
+	maxIPv4Range *big.Int
+	maxIPv6Range *big.Int
 }
 
 type meta struct {
@@ -75,14 +77,25 @@ type fieldEnabled struct {
 	usageTypeEnabled          bool
 }
 
-func newDb(r io.ReaderAt) (*DB, error) {
+func NewDb(r io.ReaderAt) (*DB, error) {
 	db := &DB{}
-	err := db.readMeta(r)
+	db.r = r
+	db.maxIPv4Range = big.NewInt(4294967295)
+	db.maxIPv6Range = big.NewInt(0)
+	err := db.readMeta()
 	if err != nil {
 		return nil, err
 	}
 
 	return db, nil
+}
+
+func (db *DB) Query(ip string, mode uint32) (*Record, error) {
+	return db.query(ip, mode)
+}
+
+func (db *DB) Close() error {
+	return nil
 }
 
 // read byte

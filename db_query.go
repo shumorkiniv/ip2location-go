@@ -34,12 +34,12 @@ func (db *DB) query(ip string, mode uint32) (*Record, error) {
 	if ipType == 4 {
 		baseAddr = db.meta.ipv4DataBaseAddr
 		high = db.meta.ipv4DataBaseCount
-		maxip = maxIPv4Range
+		maxip = db.maxIPv4Range
 		colSize = db.meta.ipv4ColumnSize
 	} else {
 		baseAddr = db.meta.ipv6DataBaseAddr
 		high = db.meta.ipv6DataBaseCount
-		maxip = maxIPv6Range
+		maxip = db.maxIPv6Range
 		colSize = db.meta.ipv6ColumnSize
 	}
 
@@ -260,7 +260,7 @@ func (db *DB) query(ip string, mode uint32) (*Record, error) {
 			low = mid + 1
 		}
 	}
-	return nil, errors.New("no match found")
+	return nil, ErrNotFound
 }
 
 // get IP type and calculate IP number; calculates index too if exists

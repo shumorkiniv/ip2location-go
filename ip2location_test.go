@@ -1,13 +1,12 @@
 package ip2location
 
 import (
-	"fmt"
 	"testing"
 )
 
 var DBpath = "IP-COUNTRY-SAMPLE.BIN"
 
-func TestNew(t *testing.T) {
+func TestNewLocation(t *testing.T) {
 	t.Run("Read from file", func(t *testing.T) {
 		db, err := New(DBpath, false)
 		if err != nil {
@@ -19,7 +18,9 @@ func TestNew(t *testing.T) {
 			t.Error(err)
 		}
 
-		fmt.Println(r)
+		if r.CountryLong != "UNITED STATES" {
+			t.Error("County name is not equal. Expected UNITED STATES, got", r.CountryLong)
+		}
 
 		err = db.Close()
 		if err != nil {
@@ -34,9 +35,13 @@ func TestNew(t *testing.T) {
 			t.Error(err)
 		}
 
-		_, err = db.Query("8.8.8.8", CountryLong)
+		r, err := db.Query("8.8.8.8", CountryLong)
 		if err != nil {
 			t.Error(err)
+		}
+
+		if r.CountryLong != "UNITED STATES" {
+			t.Error("County name is not equal. Expected UNITED STATES, got", r.CountryLong)
 		}
 
 		err = db.Close()
