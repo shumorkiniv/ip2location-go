@@ -1,11 +1,11 @@
 package ip2location
 
 import (
-	"os"
-	"io"
-	"syscall"
 	"bytes"
 	"errors"
+	"io"
+	"os"
+	"syscall"
 )
 
 // FileDB чтение базы данных ip2location и поиск местоположения по IP адресу
@@ -41,10 +41,15 @@ func NewFileDB(path string, mmap bool) (*FileDB, error) {
 		}
 
 		r = bytes.NewReader(data)
-	} else {
-		if data.f, err = os.Open(path); err != nil {
+
+		if err = syscall.Close(fd); err != nil {
 			return nil, err
 		}
+	} else {
+		if data.f, err = os.OpenFile(path, os.O_RDONLY, 0); err != nil {
+			return nil, err
+		}
+
 		r = data.f
 	}
 
